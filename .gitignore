@@ -1,0 +1,35 @@
+# Java / Gradle
+.gradle/
+build/
+out/
+*.class
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment / local runtime
+.env
+.env.*
+!.env.example
+logs/
+*.log
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Docker / local data
+docker-data/
+
+# Superpowers brainstorming artifacts
+.superpowers/
+docs/superpowers/
