@@ -6,15 +6,16 @@ CREATE TABLE areas (
     display_order INTEGER NOT NULL
 );
 
--- Projects are optional sub-contexts within an area. The unique constraint keeps
--- autocomplete/free-create behavior from producing duplicate project names per area.
+-- Projects are optional sub-contexts within an area. normalized_name keeps
+-- autocomplete/free-create behavior case-insensitive without losing display casing.
 CREATE TABLE projects (
     id UUID PRIMARY KEY,
     area_id UUID NOT NULL REFERENCES areas(id),
     name VARCHAR(120) NOT NULL,
+    normalized_name VARCHAR(120) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT uq_projects_area_name UNIQUE (area_id, name)
+    CONSTRAINT uq_projects_area_normalized_name UNIQUE (area_id, normalized_name)
 );
 
 -- Goals measure outcomes. Goal type controls how progress is calculated; recurrence

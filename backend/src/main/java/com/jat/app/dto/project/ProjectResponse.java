@@ -1,0 +1,16 @@
+package com.jat.app.dto.project;
+
+import java.time.Instant;
+import java.util.UUID;
+
+// Project responses include area context so clients can group or filter without an extra lookup.
+public record ProjectResponse(
+        UUID id,
+        UUID areaId,
+        String areaName,
+        String name,
+        String normalizedName,
+        Instant createdAt,
+        Instant updatedAt
+) {
+}
