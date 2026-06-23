@@ -14,6 +14,8 @@ Windows Launcher
 
 The frontend never talks directly to the database. It calls Spring Boot REST endpoints under `/api/*`. The backend owns validation, business logic, and persistence.
 
+The planning model centers on required areas, optional projects, goals, tasks, recurring progress periods, and manual check-ins. See [DESIGN.md](./DESIGN.md) for the full product model.
+
 ## Stack
 
 - Java 21
@@ -30,8 +32,9 @@ The frontend never talks directly to the database. It calls Spring Boot REST end
 
 ## MVP Scope
 
-- Goals CRUD
-- Tasks linked to goals
+- Areas and projects
+- Goals with progress tracking
+- Tasks linked to areas, projects, and goals
 - Calendar planning blocks
 - Dashboard / Today view
 - Simple Job Inbox
