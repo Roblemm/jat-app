@@ -29,6 +29,7 @@ class AreaControllerTest {
 
     @Test
     void findAllReturnsAreas() throws Exception {
+        // The frontend uses this endpoint to populate required area choices.
         when(areaService.findAll()).thenReturn(List.of(
                 new AreaResponse(UUID.fromString("00000000-0000-0000-0000-000000000001"), "Career", 10),
                 new AreaResponse(UUID.fromString("00000000-0000-0000-0000-000000000002"), "Personal", 20)

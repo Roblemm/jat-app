@@ -25,6 +25,7 @@ class AreaServiceTest {
 
     @Test
     void findAllReturnsAreasOrderedByDisplayOrder() {
+        // Stable ordering matters because areas drive navigation and capture suggestions.
         Area career = new Area(UUID.randomUUID(), "Career", 10);
         Area personal = new Area(UUID.randomUUID(), "Personal", 20);
 

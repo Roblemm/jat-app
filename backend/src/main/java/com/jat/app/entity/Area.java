@@ -25,6 +25,7 @@ public class Area {
     @Column(nullable = false)
     private int displayOrder;
 
+    // Explicit constructor keeps seeded/test areas deterministic instead of generating random IDs.
     public Area(UUID id, String name, int displayOrder) {
         this.id = id;
         this.name = name;

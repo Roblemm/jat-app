@@ -16,6 +16,7 @@ public class AreaService {
 
     @Transactional(readOnly = true)
     public List<AreaResponse> findAll() {
+        // Areas should appear consistently in navigation, filters, and quick-capture prompts.
         return areaRepository.findAllByOrderByDisplayOrderAscNameAsc()
                 .stream()
                 .map(area -> new AreaResponse(area.getId(), area.getName(), area.getDisplayOrder()))
