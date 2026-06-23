@@ -17,7 +17,7 @@ The frontend never talks directly to the database. It calls Spring Boot REST end
 ## Stack
 
 - Java 21
-- Spring Boot 3.3+
+- Spring Boot 3.5
 - Spring Web
 - Spring Data JPA
 - PostgreSQL
