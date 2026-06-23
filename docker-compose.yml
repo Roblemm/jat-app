@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jat-postgres
+    environment:
+      POSTGRES_DB: jat
+      POSTGRES_USER: jat
+      POSTGRES_PASSWORD: jat_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - jat-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jat -d jat"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: jat-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/jat
+      SPRING_DATASOURCE_USERNAME: jat
+      SPRING_DATASOURCE_PASSWORD: jat_dev_password
+    ports:
+      - "8080:8080"
+
+  frontend:
+    image: node:22-alpine
+    container_name: jat-frontend
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    volumes:
+      - ./frontend:/app
+      - jat-frontend-node-modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  jat-postgres-data:
+  jat-frontend-node-modules:
