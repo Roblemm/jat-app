@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -38,6 +37,7 @@ class ProjectControllerTest {
 
     @Test
     void findAllReturnsProjectsForArea() throws Exception {
+        // The endpoint is area-filtered because projects are optional sub-contexts, not global categories.
         UUID areaId = UUID.randomUUID();
         ProjectResponse response = new ProjectResponse(
                 UUID.randomUUID(),
@@ -60,6 +60,7 @@ class ProjectControllerTest {
 
     @Test
     void createReturnsCreatedProject() throws Exception {
+        // POST supports the UI pattern where typing a new autocomplete value creates the project.
         UUID areaId = UUID.randomUUID();
         ProjectResponse response = new ProjectResponse(
                 UUID.randomUUID(),
@@ -83,6 +84,7 @@ class ProjectControllerTest {
 
     @Test
     void createRequiresAreaId() throws Exception {
+        // A project without an area would recreate the same ambiguity areas are meant to remove.
         mockMvc.perform(post("/api/projects")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new CreateProjectRequest(null, "Portfolio"))))

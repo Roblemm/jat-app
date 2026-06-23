@@ -22,6 +22,7 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public List<ProjectResponse> findAll(UUID areaId) {
+        // The UI asks for projects after an area is selected, so the service keeps the query area-scoped.
         return projectRepository.findAllByAreaIdOrderByNameAsc(areaId)
                 .stream()
                 .map(this::toResponse)
@@ -30,9 +31,11 @@ public class ProjectService {
 
     @Transactional
     public ProjectResponse create(CreateProjectRequest request) {
+        // Validate the required parent area before creating a project that depends on it.
         Area area = areaRepository.findById(request.areaId())
                 .orElseThrow(() -> new IllegalArgumentException("Area not found: " + request.areaId()));
 
+        // Match the database unique constraint so duplicate errors are predictable and user-friendly.
         String normalizedName = Project.normalizeName(request.name());
         if (projectRepository.existsByAreaIdAndNormalizedName(area.getId(), normalizedName)) {
             throw new IllegalArgumentException("Project already exists in this area: " + request.name());
@@ -42,6 +45,7 @@ public class ProjectService {
     }
 
     private ProjectResponse toResponse(Project project) {
+        // Keep mapping in the service for now; extract a mapper when multiple project views appear.
         return new ProjectResponse(
                 project.getId(),
                 project.getArea().getId(),

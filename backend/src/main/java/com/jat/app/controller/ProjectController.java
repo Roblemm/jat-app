@@ -22,6 +22,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ProjectController {
 
+    // The controller stays thin: HTTP validation/routing here, business rules in ProjectService.
     private final ProjectService projectService;
 
     // Projects are listed within an area because area context is required before project autocomplete is useful.

@@ -34,6 +34,7 @@ class ProjectServiceTest {
 
     @Test
     void createAddsProjectToExistingArea() {
+        // Creation keeps the display name while deriving a normalized value for duplicate checks.
         Area area = new Area(UUID.randomUUID(), "Career", 10);
         CreateProjectRequest request = new CreateProjectRequest(area.getId(), "Portfolio");
 
@@ -50,6 +51,7 @@ class ProjectServiceTest {
 
     @Test
     void createRejectsDuplicateNameWithinSameAreaIgnoringCase() {
+        // "Portfolio" and "portfolio" should not become two autocomplete options in the same area.
         UUID areaId = UUID.randomUUID();
         CreateProjectRequest request = new CreateProjectRequest(areaId, "portfolio");
 
@@ -63,6 +65,7 @@ class ProjectServiceTest {
 
     @Test
     void findByAreaReturnsProjectsForArea() {
+        // Projects are intentionally queried after an area is known.
         Area area = new Area(UUID.randomUUID(), "Career", 10);
         Project portfolio = new Project(area, "Portfolio");
 

@@ -11,6 +11,6 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
     // Area-scoped lists power project autocomplete after the user chooses an area.
     List<Project> findAllByAreaIdOrderByNameAsc(UUID areaId);
 
-    // Case-insensitive uniqueness is enforced using normalizedName instead of display name.
+    // Mirrors the (area_id, normalized_name) database constraint before attempting an insert.
     boolean existsByAreaIdAndNormalizedName(UUID areaId, String normalizedName);
 }

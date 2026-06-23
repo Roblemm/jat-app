@@ -26,16 +26,20 @@ public class Project {
     @Id
     private UUID id;
 
+    // Projects only make sense inside an area; this keeps project names scoped to the user's current context.
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "area_id", nullable = false)
     private Area area;
 
+    // Preserve the user's preferred casing for display while normalizedName handles comparisons.
     @Column(nullable = false, length = 120)
     private String name;
 
+    // Lowercase/trimmed value used for case-insensitive uniqueness within an area.
     @Column(nullable = false, length = 120)
     private String normalizedName;
 
+    // Timestamps are managed by the entity lifecycle so service code does not repeat audit-field setup.
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -59,6 +63,7 @@ public class Project {
         return name.trim().toLowerCase(Locale.ROOT);
     }
 
+    // Hibernate calls this before the first insert.
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();
@@ -66,6 +71,7 @@ public class Project {
         this.updatedAt = now;
     }
 
+    // Hibernate calls this before updates so updatedAt reflects the last persisted edit.
     @PreUpdate
     void onUpdate() {
         this.updatedAt = Instant.now();
