@@ -8,5 +8,6 @@ import java.util.UUID;
 
 public interface AreaRepository extends JpaRepository<Area, UUID> {
 
+    // Spring Data derives this query from the method name and keeps ordering close to the data access boundary.
     List<Area> findAllByOrderByDisplayOrderAscNameAsc();
 }

@@ -16,6 +16,7 @@ public class AreaController {
 
     private final AreaService areaService;
 
+    // Areas are read-only for the initial app so capture forms can rely on a stable base set.
     @GetMapping
     public List<AreaResponse> findAll() {
         return areaService.findAll();
