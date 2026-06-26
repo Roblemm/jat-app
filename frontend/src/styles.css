@@ -276,6 +276,11 @@ a {
   grid-template-columns: repeat(2, minmax(220px, 1fr));
 }
 
+.compact-toolbar {
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  margin-bottom: 14px;
+}
+
 .metric {
   min-height: 94px;
   padding: 16px;
@@ -406,6 +411,18 @@ textarea {
   gap: 8px;
 }
 
+.row-actions {
+  min-width: 220px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.row-actions select {
+  min-width: 132px;
+}
+
 .list-line {
   min-height: 42px;
   display: flex;
@@ -498,7 +515,10 @@ textarea {
     align-items: stretch;
   }
 
-  .job-actions {
+  .job-actions,
+  .row-actions {
     width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
   }
 }

@@ -28,6 +28,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -217,5 +218,70 @@ class TaskServiceTest {
         var result = taskService.findAll(area.getId(), null, null);
 
         assertThat(result).extracting("title").containsExactly("Prepare weekly plan");
+    }
+
+    @Test
+    void updateStatusMarksTaskCompletedAndSetsCompletedAt() {
+        // Completed tasks need a timestamp so later progress views can count when work was finished.
+        Area area = new Area(UUID.randomUUID(), "Career", 10);
+        Task task = new Task(
+                area,
+                null,
+                null,
+                "Send application",
+                null,
+                TaskType.ACTION,
+                TaskPriority.HIGH,
+                Recurrence.NONE,
+                null,
+                null,
+                null,
+                null
+        );
+
+        when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+
+        var result = taskService.updateStatus(task.getId(), TaskStatus.COMPLETED);
+
+        assertThat(result.status()).isEqualTo(TaskStatus.COMPLETED);
+        assertThat(result.completedAt()).isNotNull();
+    }
+
+    @Test
+    void updateStatusClearsCompletedAtWhenTaskReopens() {
+        // Reopening a task should remove the completion timestamp so dashboards do not double-count it.
+        Area area = new Area(UUID.randomUUID(), "Career", 10);
+        Task task = new Task(
+                area,
+                null,
+                null,
+                "Send application",
+                null,
+                TaskType.ACTION,
+                TaskPriority.HIGH,
+                Recurrence.NONE,
+                null,
+                null,
+                null,
+                null
+        );
+        task.changeStatus(TaskStatus.COMPLETED);
+
+        when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+
+        var result = taskService.updateStatus(task.getId(), TaskStatus.TODO);
+
+        assertThat(result.status()).isEqualTo(TaskStatus.TODO);
+        assertThat(result.completedAt()).isNull();
+    }
+
+    @Test
+    void deleteRemovesTaskById() {
+        // Hard delete is acceptable for the MVP because archived tasks remain available as a non-destructive option.
+        UUID taskId = UUID.randomUUID();
+
+        taskService.delete(taskId);
+
+        verify(taskRepository).deleteById(taskId);
     }
 }

@@ -113,6 +113,11 @@ public class Task {
         this.scheduledEnd = scheduledEnd;
     }
 
+    public void changeStatus(TaskStatus status) {
+        this.status = status;
+        this.completedAt = status == TaskStatus.COMPLETED ? Instant.now() : null;
+    }
+
     // Hibernate calls this before the first insert so services do not duplicate timestamp setup.
     @PrePersist
     void onCreate() {

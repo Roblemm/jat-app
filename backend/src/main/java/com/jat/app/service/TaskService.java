@@ -6,6 +6,7 @@ import com.jat.app.entity.Area;
 import com.jat.app.entity.Goal;
 import com.jat.app.entity.Project;
 import com.jat.app.entity.Task;
+import com.jat.app.entity.TaskStatus;
 import com.jat.app.repository.AreaRepository;
 import com.jat.app.repository.GoalRepository;
 import com.jat.app.repository.ProjectRepository;
@@ -59,6 +60,20 @@ public class TaskService {
                 request.scheduledStart(),
                 request.scheduledEnd()
         )));
+    }
+
+    @Transactional
+    public TaskResponse updateStatus(UUID taskId, TaskStatus status) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
+
+        task.changeStatus(status);
+        return toResponse(task);
+    }
+
+    @Transactional
+    public void delete(UUID taskId) {
+        taskRepository.deleteById(taskId);
     }
 
     private List<Task> findTasks(UUID areaId, UUID projectId, UUID goalId) {

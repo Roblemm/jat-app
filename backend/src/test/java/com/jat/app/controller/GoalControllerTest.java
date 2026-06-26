@@ -3,6 +3,7 @@ package com.jat.app.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jat.app.dto.goal.CreateGoalRequest;
 import com.jat.app.dto.goal.GoalResponse;
+import com.jat.app.dto.goal.UpdateGoalStatusRequest;
 import com.jat.app.entity.GoalStatus;
 import com.jat.app.entity.GoalType;
 import com.jat.app.entity.Recurrence;
@@ -21,8 +22,11 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -134,7 +138,46 @@ class GoalControllerTest {
 
         mockMvc.perform(post("/api/goals")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateStatusReturnsUpdatedGoal() throws Exception {
+        // Goal status changes are workflow actions, not full goal edits.
+        UUID goalId = UUID.randomUUID();
+        UUID areaId = UUID.randomUUID();
+        GoalResponse response = new GoalResponse(
+                goalId,
+                areaId,
+                "Career",
+                null,
+                null,
+                "Complete weekly applications",
+                null,
+                GoalType.TARGET,
+                GoalStatus.PAUSED,
+                Recurrence.WEEKLY,
+                new BigDecimal("20"),
+                "applications",
+                LocalDate.of(2026, 7, 3),
+                Instant.now(),
+                Instant.now()
+        );
+
+        when(goalService.updateStatus(eq(goalId), eq(GoalStatus.PAUSED))).thenReturn(response);
+
+        mockMvc.perform(patch("/api/goals/{id}/status", goalId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new UpdateGoalStatusRequest(GoalStatus.PAUSED))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PAUSED"));
+    }
+
+    @Test
+    void deleteReturnsNoContent() throws Exception {
+        // DELETE supports true cleanup; ARCHIVED remains the softer workflow state.
+        mockMvc.perform(delete("/api/goals/{id}", UUID.randomUUID()))
+                .andExpect(status().isNoContent());
     }
 }

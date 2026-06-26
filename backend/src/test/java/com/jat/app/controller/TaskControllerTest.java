@@ -3,6 +3,7 @@ package com.jat.app.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jat.app.dto.task.CreateTaskRequest;
 import com.jat.app.dto.task.TaskResponse;
+import com.jat.app.dto.task.UpdateTaskStatusRequest;
 import com.jat.app.entity.Recurrence;
 import com.jat.app.entity.TaskPriority;
 import com.jat.app.entity.TaskStatus;
@@ -20,8 +21,11 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -149,7 +153,52 @@ class TaskControllerTest {
 
         mockMvc.perform(post("/api/tasks")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateStatusReturnsUpdatedTask() throws Exception {
+        // Status is a narrow PATCH operation so quick-complete controls do not submit the whole task form.
+        UUID taskId = UUID.randomUUID();
+        UUID areaId = UUID.randomUUID();
+        TaskResponse response = new TaskResponse(
+                taskId,
+                areaId,
+                "Career",
+                null,
+                null,
+                null,
+                null,
+                "Prepare weekly plan",
+                null,
+                TaskType.ACTION,
+                TaskStatus.COMPLETED,
+                TaskPriority.HIGH,
+                Recurrence.NONE,
+                null,
+                null,
+                null,
+                null,
+                Instant.parse("2026-07-01T15:00:00Z"),
+                Instant.now(),
+                Instant.now()
+        );
+
+        when(taskService.updateStatus(eq(taskId), eq(TaskStatus.COMPLETED))).thenReturn(response);
+
+        mockMvc.perform(patch("/api/tasks/{id}/status", taskId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new UpdateTaskStatusRequest(TaskStatus.COMPLETED))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.completedAt").value("2026-07-01T15:00:00Z"));
+    }
+
+    @Test
+    void deleteReturnsNoContent() throws Exception {
+        // DELETE removes captured noise when archiving would be unnecessary ceremony.
+        mockMvc.perform(delete("/api/tasks/{id}", UUID.randomUUID()))
+                .andExpect(status().isNoContent());
     }
 }

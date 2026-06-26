@@ -3,6 +3,7 @@ package com.jat.app.service;
 import com.jat.app.dto.goal.CreateGoalRequest;
 import com.jat.app.entity.Area;
 import com.jat.app.entity.Goal;
+import com.jat.app.entity.GoalStatus;
 import com.jat.app.entity.GoalType;
 import com.jat.app.entity.Project;
 import com.jat.app.entity.Recurrence;
@@ -24,6 +25,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -143,5 +145,38 @@ class GoalServiceTest {
         var result = goalService.findAll(area.getId(), null);
 
         assertThat(result).extracting("title").containsExactly("Complete weekly applications");
+    }
+
+    @Test
+    void updateStatusChangesGoalWorkflowState() {
+        // Pausing or completing a goal should not require editing its title, target, or project.
+        Area area = new Area(UUID.randomUUID(), "Career", 10);
+        Goal goal = new Goal(
+                area,
+                null,
+                "Complete weekly applications",
+                null,
+                GoalType.TARGET,
+                Recurrence.WEEKLY,
+                new BigDecimal("20"),
+                "applications",
+                null
+        );
+
+        when(goalRepository.findById(goal.getId())).thenReturn(Optional.of(goal));
+
+        var result = goalService.updateStatus(goal.getId(), GoalStatus.PAUSED);
+
+        assertThat(result.status()).isEqualTo(GoalStatus.PAUSED);
+    }
+
+    @Test
+    void deleteRemovesGoalById() {
+        // Deleting is separate from archiving so the UI can offer both cleanup styles later.
+        UUID goalId = UUID.randomUUID();
+
+        goalService.delete(goalId);
+
+        verify(goalRepository).deleteById(goalId);
     }
 }

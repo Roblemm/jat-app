@@ -1,6 +1,7 @@
 import type {
   Area,
   Goal,
+  GoalStatus,
   GoalType,
   JobImportPreview,
   JobOpportunity,
@@ -9,6 +10,7 @@ import type {
   Recurrence,
   Task,
   TaskPriority,
+  TaskStatus,
   TaskType,
   TodayDashboard,
 } from './types';
@@ -78,6 +80,18 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  updateGoalStatus: (id: string, status: GoalStatus) =>
+    request<Goal>(`/api/goals/${id}/status`, {
+      method: 'PATCH',
+      headers: jsonHeaders,
+      body: JSON.stringify({ status }),
+    }),
+
+  deleteGoal: (id: string) =>
+    request<void>(`/api/goals/${id}`, {
+      method: 'DELETE',
+    }),
+
   tasks: (params: { areaId: string; projectId?: string | null; goalId?: string | null }) =>
     request<Task[]>(`/api/tasks${queryString(params)}`),
 
@@ -99,6 +113,18 @@ export const api = {
       method: 'POST',
       headers: jsonHeaders,
       body: JSON.stringify(body),
+    }),
+
+  updateTaskStatus: (id: string, status: TaskStatus) =>
+    request<Task>(`/api/tasks/${id}/status`, {
+      method: 'PATCH',
+      headers: jsonHeaders,
+      body: JSON.stringify({ status }),
+    }),
+
+  deleteTask: (id: string) =>
+    request<void>(`/api/tasks/${id}`, {
+      method: 'DELETE',
     }),
 
   today: (params: { date: string; areaId?: string | null }) =>

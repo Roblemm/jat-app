@@ -4,6 +4,7 @@ import com.jat.app.dto.goal.CreateGoalRequest;
 import com.jat.app.dto.goal.GoalResponse;
 import com.jat.app.entity.Area;
 import com.jat.app.entity.Goal;
+import com.jat.app.entity.GoalStatus;
 import com.jat.app.entity.Project;
 import com.jat.app.repository.AreaRepository;
 import com.jat.app.repository.GoalRepository;
@@ -54,6 +55,20 @@ public class GoalService {
                 request.unit(),
                 request.targetDate()
         )));
+    }
+
+    @Transactional
+    public GoalResponse updateStatus(UUID goalId, GoalStatus status) {
+        Goal goal = goalRepository.findById(goalId)
+                .orElseThrow(() -> new IllegalArgumentException("Goal not found: " + goalId));
+
+        goal.changeStatus(status);
+        return toResponse(goal);
+    }
+
+    @Transactional
+    public void delete(UUID goalId) {
+        goalRepository.deleteById(goalId);
     }
 
     private Project resolveProject(UUID projectId, Area area) {

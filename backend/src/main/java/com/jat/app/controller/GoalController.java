@@ -2,11 +2,15 @@ package com.jat.app.controller;
 
 import com.jat.app.dto.goal.CreateGoalRequest;
 import com.jat.app.dto.goal.GoalResponse;
+import com.jat.app.dto.goal.UpdateGoalStatusRequest;
 import com.jat.app.service.GoalService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,5 +43,19 @@ public class GoalController {
     @ResponseStatus(HttpStatus.CREATED)
     public GoalResponse create(@Valid @RequestBody CreateGoalRequest request) {
         return goalService.create(request);
+    }
+
+    @PatchMapping("/{id}/status")
+    public GoalResponse updateStatus(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateGoalStatusRequest request
+    ) {
+        return goalService.updateStatus(id, request.status());
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
+        goalService.delete(id);
     }
 }

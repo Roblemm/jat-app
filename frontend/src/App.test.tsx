@@ -17,9 +17,32 @@ const emptyDashboard = {
   counts: { dueToday: 0, overdue: 0, scheduled: 0, activeGoals: 0 },
 };
 
+const task = {
+  id: 'task-id',
+  areaId: 'career-id',
+  areaName: 'Career',
+  projectId: null,
+  projectName: null,
+  goalId: null,
+  goalTitle: null,
+  title: 'Send application',
+  description: null,
+  taskType: 'ACTION',
+  status: 'TODO',
+  priority: 'HIGH',
+  recurrence: 'NONE',
+  dueAt: null,
+  remindAt: null,
+  scheduledStart: null,
+  scheduledEnd: null,
+  completedAt: null,
+  createdAt: null,
+  updatedAt: null,
+};
+
 describe('App', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.startsWith('/api/areas')) {
         return jsonResponse(areas);
@@ -29,7 +52,15 @@ describe('App', () => {
         return jsonResponse(emptyDashboard);
       }
 
-      if (url.startsWith('/api/projects') || url.startsWith('/api/goals') || url.startsWith('/api/tasks') || url.startsWith('/api/job-opportunities')) {
+      if (url === '/api/tasks/task-id/status' && init?.method === 'PATCH') {
+        return jsonResponse({ ...task, status: 'COMPLETED', completedAt: '2026-06-26T12:00:00Z' });
+      }
+
+      if (url.startsWith('/api/tasks')) {
+        return jsonResponse([task]);
+      }
+
+      if (url.startsWith('/api/projects') || url.startsWith('/api/goals') || url.startsWith('/api/job-opportunities')) {
         return jsonResponse([]);
       }
 
@@ -59,6 +90,26 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /context/i })).toBeInTheDocument();
       expect(screen.getByLabelText(/current area/i)).toHaveValue('personal-id');
+    });
+  });
+
+  it('updates task status from the task list', async () => {
+    const fetchMock = vi.mocked(fetch);
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: /tasks/i }));
+
+    const statusSelect = await screen.findByLabelText(/status for send application/i);
+    fireEvent.change(statusSelect, { target: { value: 'COMPLETED' } });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/tasks/task-id/status',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'COMPLETED' }),
+        }),
+      );
     });
   });
 });

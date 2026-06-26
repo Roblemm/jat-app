@@ -98,6 +98,10 @@ public class Goal {
         this.targetDate = targetDate;
     }
 
+    public void changeStatus(GoalStatus status) {
+        this.status = status;
+    }
+
     // Hibernate calls this before the first insert so services do not repeat audit-field setup.
     @PrePersist
     void onCreate() {

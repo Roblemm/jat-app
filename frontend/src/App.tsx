@@ -20,6 +20,7 @@ import { api } from './api';
 import type {
   Area,
   Goal,
+  GoalStatus,
   GoalType,
   JobImportPreview,
   JobOpportunity,
@@ -28,6 +29,7 @@ import type {
   Recurrence,
   Task,
   TaskPriority,
+  TaskStatus,
   TaskType,
   TodayDashboard,
 } from './types';
@@ -35,8 +37,10 @@ import type {
 type View = 'today' | 'goals' | 'tasks' | 'jobs' | 'context';
 
 const goalTypes: GoalType[] = ['CHECKLIST', 'TARGET', 'HABIT'];
+const goalStatuses: Array<GoalStatus | 'ALL'> = ['ALL', 'ACTIVE', 'PAUSED', 'COMPLETED', 'ARCHIVED'];
 const recurrences: Recurrence[] = ['NONE', 'DAILY', 'WEEKLY', 'MONTHLY'];
 const taskTypes: TaskType[] = ['ACTION', 'IDEA', 'ROUTINE'];
+const taskStatuses: Array<TaskStatus | 'ALL'> = ['ALL', 'TODO', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED'];
 const priorities: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH'];
 const jobStatuses: Array<JobStatus | 'ALL'> = ['ALL', 'SAVED', 'APPLIED', 'INTERVIEWING', 'OFFER', 'REJECTED', 'ARCHIVED'];
 
@@ -58,6 +62,11 @@ export function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [goalStatusFilter, setGoalStatusFilter] = useState<GoalStatus | 'ALL'>('ACTIVE');
+  const [taskStatusFilter, setTaskStatusFilter] = useState<TaskStatus | 'ALL'>('ALL');
+  const [taskPriorityFilter, setTaskPriorityFilter] = useState<TaskPriority | 'ALL'>('ALL');
+  const [taskProjectFilter, setTaskProjectFilter] = useState('ALL');
+  const [taskGoalFilter, setTaskGoalFilter] = useState('ALL');
   const [dashboard, setDashboard] = useState<TodayDashboard | null>(null);
   const [jobs, setJobs] = useState<JobOpportunity[]>([]);
   const [jobStatusFilter, setJobStatusFilter] = useState<JobStatus | 'ALL'>('ALL');
@@ -103,6 +112,22 @@ export function App() {
   const selectedArea = useMemo(
     () => areas.find((area) => area.id === selectedAreaId),
     [areas, selectedAreaId],
+  );
+
+  const visibleGoals = useMemo(
+    () => goals.filter((goal) => goalStatusFilter === 'ALL' || goal.status === goalStatusFilter),
+    [goals, goalStatusFilter],
+  );
+
+  const visibleTasks = useMemo(
+    () => tasks.filter((task) => {
+      const matchesStatus = taskStatusFilter === 'ALL' || task.status === taskStatusFilter;
+      const matchesPriority = taskPriorityFilter === 'ALL' || task.priority === taskPriorityFilter;
+      const matchesProject = taskProjectFilter === 'ALL' || (task.projectId ?? 'NONE') === taskProjectFilter;
+      const matchesGoal = taskGoalFilter === 'ALL' || (task.goalId ?? 'NONE') === taskGoalFilter;
+      return matchesStatus && matchesPriority && matchesProject && matchesGoal;
+    }),
+    [tasks, taskStatusFilter, taskPriorityFilter, taskProjectFilter, taskGoalFilter],
   );
 
   const showError = (message: string) => {
@@ -229,6 +254,38 @@ export function App() {
     }, 'Task created.');
   };
 
+  const updateGoalStatus = (goal: Goal, status: GoalStatus) => {
+    void runAction(async () => {
+      await api.updateGoalStatus(goal.id, status);
+      await loadAreaData(selectedAreaId);
+      await loadDashboard();
+    }, 'Goal updated.');
+  };
+
+  const deleteGoal = (goalId: string) => {
+    void runAction(async () => {
+      await api.deleteGoal(goalId);
+      await loadAreaData(selectedAreaId);
+      await loadDashboard();
+    }, 'Goal deleted.');
+  };
+
+  const updateTaskStatus = (task: Task, status: TaskStatus) => {
+    void runAction(async () => {
+      await api.updateTaskStatus(task.id, status);
+      await loadAreaData(selectedAreaId);
+      await loadDashboard();
+    }, 'Task updated.');
+  };
+
+  const deleteTask = (taskId: string) => {
+    void runAction(async () => {
+      await api.deleteTask(taskId);
+      await loadAreaData(selectedAreaId);
+      await loadDashboard();
+    }, 'Task deleted.');
+  };
+
   const previewImport = (event: FormEvent) => {
     event.preventDefault();
     void runAction(async () => {
@@ -351,10 +408,14 @@ export function App() {
         {view === 'goals' && (
           <GoalsView
             projects={projects}
-            goals={goals}
+            goals={visibleGoals}
+            goalStatusFilter={goalStatusFilter}
+            setGoalStatusFilter={setGoalStatusFilter}
             goalForm={goalForm}
             setGoalForm={setGoalForm}
             createGoal={createGoal}
+            updateGoalStatus={updateGoalStatus}
+            deleteGoal={deleteGoal}
             busy={busy}
           />
         )}
@@ -363,10 +424,20 @@ export function App() {
           <TasksView
             projects={projects}
             goals={goals}
-            tasks={tasks}
+            tasks={visibleTasks}
+            taskStatusFilter={taskStatusFilter}
+            setTaskStatusFilter={setTaskStatusFilter}
+            taskPriorityFilter={taskPriorityFilter}
+            setTaskPriorityFilter={setTaskPriorityFilter}
+            taskProjectFilter={taskProjectFilter}
+            setTaskProjectFilter={setTaskProjectFilter}
+            taskGoalFilter={taskGoalFilter}
+            setTaskGoalFilter={setTaskGoalFilter}
             taskForm={taskForm}
             setTaskForm={setTaskForm}
             createTask={createTask}
+            updateTaskStatus={updateTaskStatus}
+            deleteTask={deleteTask}
             busy={busy}
           />
         )}
@@ -468,13 +539,19 @@ function TodayView({
 function GoalsView({
   projects,
   goals,
+  goalStatusFilter,
+  setGoalStatusFilter,
   goalForm,
   setGoalForm,
   createGoal,
+  updateGoalStatus,
+  deleteGoal,
   busy,
 }: {
   projects: Project[];
   goals: Goal[];
+  goalStatusFilter: GoalStatus | 'ALL';
+  setGoalStatusFilter: (value: GoalStatus | 'ALL') => void;
   goalForm: {
     projectId: string;
     title: string;
@@ -487,6 +564,8 @@ function GoalsView({
   };
   setGoalForm: React.Dispatch<React.SetStateAction<typeof goalForm>>;
   createGoal: (event: FormEvent) => void;
+  updateGoalStatus: (goal: Goal, status: GoalStatus) => void;
+  deleteGoal: (goalId: string) => void;
   busy: boolean;
 }) {
   return (
@@ -516,7 +595,12 @@ function GoalsView({
       </form>
 
       <div className="panel list-panel-large">
-        <PanelTitle icon={<Target />} title="Goals" />
+        <div className="panel-heading with-filter">
+          <PanelTitle icon={<Target />} title="Goals" />
+          <select value={goalStatusFilter} onChange={(event) => setGoalStatusFilter(event.target.value as GoalStatus | 'ALL')}>
+            {goalStatuses.map((status) => <option key={status}>{status}</option>)}
+          </select>
+        </div>
         <div className="stack-list">
           {goals.map((goal) => (
             <article className="row-item" key={goal.id}>
@@ -524,10 +608,21 @@ function GoalsView({
                 <strong>{goal.title}</strong>
                 <span>{goal.goalType} · {goal.recurrence} · {goal.projectName ?? 'No project'}</span>
               </div>
-              <StatusPill label={goal.status} />
+              <div className="row-actions">
+                <select
+                  aria-label={`Status for ${goal.title}`}
+                  value={goal.status}
+                  onChange={(event) => updateGoalStatus(goal, event.target.value as GoalStatus)}
+                >
+                  {goalStatuses.filter((status) => status !== 'ALL').map((status) => <option key={status}>{status}</option>)}
+                </select>
+                <button className="icon-only danger-button" type="button" onClick={() => deleteGoal(goal.id)} aria-label={`Delete ${goal.title}`}>
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </article>
           ))}
-          {goals.length === 0 && <EmptyState label="No goals in this area yet." />}
+          {goals.length === 0 && <EmptyState label="No goals match this filter." />}
         </div>
       </div>
     </section>
@@ -538,14 +633,32 @@ function TasksView({
   projects,
   goals,
   tasks,
+  taskStatusFilter,
+  setTaskStatusFilter,
+  taskPriorityFilter,
+  setTaskPriorityFilter,
+  taskProjectFilter,
+  setTaskProjectFilter,
+  taskGoalFilter,
+  setTaskGoalFilter,
   taskForm,
   setTaskForm,
   createTask,
+  updateTaskStatus,
+  deleteTask,
   busy,
 }: {
   projects: Project[];
   goals: Goal[];
   tasks: Task[];
+  taskStatusFilter: TaskStatus | 'ALL';
+  setTaskStatusFilter: (value: TaskStatus | 'ALL') => void;
+  taskPriorityFilter: TaskPriority | 'ALL';
+  setTaskPriorityFilter: (value: TaskPriority | 'ALL') => void;
+  taskProjectFilter: string;
+  setTaskProjectFilter: (value: string) => void;
+  taskGoalFilter: string;
+  setTaskGoalFilter: (value: string) => void;
   taskForm: {
     projectId: string;
     goalId: string;
@@ -561,6 +674,8 @@ function TasksView({
   };
   setTaskForm: React.Dispatch<React.SetStateAction<typeof taskForm>>;
   createTask: (event: FormEvent) => void;
+  updateTaskStatus: (task: Task, status: TaskStatus) => void;
+  deleteTask: (taskId: string) => void;
   busy: boolean;
 }) {
   return (
@@ -602,7 +717,28 @@ function TasksView({
       </form>
 
       <div className="panel list-panel-large">
-        <PanelTitle icon={<ListChecks />} title="Tasks" />
+        <div className="panel-heading">
+          <PanelTitle icon={<ListChecks />} title="Tasks" />
+        </div>
+        <div className="toolbar compact-toolbar">
+          <label>Status<select value={taskStatusFilter} onChange={(event) => setTaskStatusFilter(event.target.value as TaskStatus | 'ALL')}>
+            {taskStatuses.map((status) => <option key={status}>{status}</option>)}
+          </select></label>
+          <label>Priority<select value={taskPriorityFilter} onChange={(event) => setTaskPriorityFilter(event.target.value as TaskPriority | 'ALL')}>
+            <option value="ALL">ALL</option>
+            {priorities.map((priority) => <option key={priority}>{priority}</option>)}
+          </select></label>
+          <label>Project<select value={taskProjectFilter} onChange={(event) => setTaskProjectFilter(event.target.value)}>
+            <option value="ALL">All projects</option>
+            <option value="NONE">No project</option>
+            {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
+          </select></label>
+          <label>Goal<select value={taskGoalFilter} onChange={(event) => setTaskGoalFilter(event.target.value)}>
+            <option value="ALL">All goals</option>
+            <option value="NONE">No goal</option>
+            {goals.map((goal) => <option key={goal.id} value={goal.id}>{goal.title}</option>)}
+          </select></label>
+        </div>
         <div className="stack-list">
           {tasks.map((task) => (
             <article className="row-item" key={task.id}>
@@ -610,10 +746,26 @@ function TasksView({
                 <strong>{task.title}</strong>
                 <span>{task.taskType} · {task.priority} · {task.goalTitle ?? task.projectName ?? 'Unlinked'}</span>
               </div>
-              <StatusPill label={task.status} />
+              <div className="row-actions">
+                {task.status !== 'COMPLETED' && (
+                  <button className="icon-only" type="button" onClick={() => updateTaskStatus(task, 'COMPLETED')} aria-label={`Complete ${task.title}`}>
+                    <CheckCircle2 size={16} />
+                  </button>
+                )}
+                <select
+                  aria-label={`Status for ${task.title}`}
+                  value={task.status}
+                  onChange={(event) => updateTaskStatus(task, event.target.value as TaskStatus)}
+                >
+                  {taskStatuses.filter((status) => status !== 'ALL').map((status) => <option key={status}>{status}</option>)}
+                </select>
+                <button className="icon-only danger-button" type="button" onClick={() => deleteTask(task.id)} aria-label={`Delete ${task.title}`}>
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </article>
           ))}
-          {tasks.length === 0 && <EmptyState label="No tasks in this area yet." />}
+          {tasks.length === 0 && <EmptyState label="No tasks match these filters." />}
         </div>
       </div>
     </section>
