@@ -106,6 +106,158 @@ class JobImportServiceTest {
     }
 
     @Test
+    void previewExtractsLinkedInStyleTitleCompanyAndLocation() {
+        // LinkedIn public pages often pack the key fields into title/meta text.
+        String sourceUrl = "https://www.linkedin.com/jobs/view/backend-intern-at-example-systems-123";
+        when(jobPageFetcher.fetch(sourceUrl)).thenReturn("""
+                <html>
+                  <head>
+                    <title>Example Systems hiring Backend Intern in Indianapolis, IN | LinkedIn</title>
+                    <meta property="og:title" content="Example Systems hiring Backend Intern in Indianapolis, IN | LinkedIn"/>
+                    <meta name="description" content="Posted now. Location: Indianapolis, IN Type: Internship"/>
+                  </head>
+                  <body>Backend Intern</body>
+                </html>
+                """);
+
+        var result = jobImportService.preview(new JobImportPreviewRequest(sourceUrl, null));
+
+        assertThat(result.extracted().title()).isEqualTo("Backend Intern");
+        assertThat(result.extracted().company()).isEqualTo("Example Systems");
+        assertThat(result.extracted().location()).isEqualTo("Indianapolis, IN");
+        assertThat(result.needsReview()).isFalse();
+    }
+
+    @Test
+    void previewExtractsAshbyStyleTitleCompanyAndStructuredLocation() {
+        // Ashby pages commonly use "Role @ Company" titles plus schema.org JobPosting data.
+        String sourceUrl = "https://jobs.ashbyhq.com/example/abc123";
+        when(jobPageFetcher.fetch(sourceUrl)).thenReturn("""
+                <html>
+                  <head>
+                    <title>Software Engineer Intern @ Example AI</title>
+                    <meta property="og:title" content="Software Engineer Intern"/>
+                    <script type="application/ld+json">
+                      {
+                        "@type": "JobPosting",
+                        "title": "Software Engineer Intern",
+                        "hiringOrganization": {"name": "Example AI"},
+                        "jobLocation": {
+                          "@type": "Place",
+                          "address": {"addressLocality": "San Francisco", "addressRegion": "CA"}
+                        }
+                      }
+                    </script>
+                  </head>
+                  <body>You need to enable JavaScript to run this app.</body>
+                </html>
+                """);
+
+        var result = jobImportService.preview(new JobImportPreviewRequest(sourceUrl, null));
+
+        assertThat(result.extracted().title()).isEqualTo("Software Engineer Intern");
+        assertThat(result.extracted().company()).isEqualTo("Example AI");
+        assertThat(result.extracted().location()).isEqualTo("San Francisco, CA");
+        assertThat(result.needsReview()).isFalse();
+    }
+
+    @Test
+    void previewExtractsSmartRecruitersStyleStructuredPosting() {
+        // SmartRecruiters and many company career pages expose schema.org JobPosting JSON-LD.
+        String sourceUrl = "https://jobs.smartrecruiters.com/example/123-backend-intern";
+        when(jobPageFetcher.fetch(sourceUrl)).thenReturn("""
+                <html>
+                  <head>
+                    <title>Example Data Backend Intern | SmartRecruiters</title>
+                    <meta property="og:title" content="Backend Intern"/>
+                    <script type="application/ld+json">
+                      {
+                        "@context": "https://schema.org",
+                        "@type": "JobPosting",
+                        "title": "Backend Intern",
+                        "hiringOrganization": {"name": "Example Data"},
+                        "jobLocationType": "TELECOMMUTE"
+                      }
+                    </script>
+                  </head>
+                  <body>Backend internship working on APIs.</body>
+                </html>
+                """);
+
+        var result = jobImportService.preview(new JobImportPreviewRequest(sourceUrl, null));
+
+        assertThat(result.extracted().title()).isEqualTo("Backend Intern");
+        assertThat(result.extracted().company()).isEqualTo("Example Data");
+        assertThat(result.extracted().location()).isEqualTo("Remote");
+        assertThat(result.needsReview()).isFalse();
+    }
+
+    @Test
+    void previewExtractsSmartRecruitersStyleMicrodataPosting() {
+        // Some SmartRecruiters pages use schema.org microdata attributes instead of JSON-LD scripts.
+        String sourceUrl = "https://jobs.smartrecruiters.com/example/123-software-engineer-intern";
+        when(jobPageFetcher.fetch(sourceUrl)).thenReturn("""
+                <html>
+                  <head>
+                    <title>Example Labs Software Engineer Intern | SmartRecruiters</title>
+                    <meta property="og:title" content="Software Engineer Intern">
+                  </head>
+                  <body>
+                    <main itemscope itemtype="http://schema.org/JobPosting">
+                      <h1 class="job-title" itemprop="title">Software Engineer Intern</h1>
+                      <li itemprop="jobLocation" itemscope itemtype="http://schema.org/Place">
+                        <span itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
+                          <spl-job-location formattedAddress="San Mateo, CA"></spl-job-location>
+                          <meta itemprop="addressLocality" content="San Mateo">
+                          <meta itemprop="addressRegion" content="CA">
+                        </span>
+                      </li>
+                      <div itemprop="hiringOrganization" itemscope itemtype="http://schema.org/Organization">
+                        <meta itemprop="name" content="Example Labs">
+                      </div>
+                    </main>
+                  </body>
+                </html>
+                """);
+
+        var result = jobImportService.preview(new JobImportPreviewRequest(sourceUrl, null));
+
+        assertThat(result.extracted().title()).isEqualTo("Software Engineer Intern");
+        assertThat(result.extracted().company()).isEqualTo("Example Labs");
+        assertThat(result.extracted().location()).isEqualTo("San Mateo, CA");
+        assertThat(result.needsReview()).isFalse();
+    }
+
+    @Test
+    void previewExtractsIndeedStyleStructuredPostingWhenIndeedAllowsFetch() {
+        // Indeed sometimes blocks server-side requests, but normal job HTML still uses recognizable fields.
+        String sourceUrl = "https://www.indeed.com/viewjob?jk=example123";
+        when(jobPageFetcher.fetch(sourceUrl)).thenReturn("""
+                <html>
+                  <head>
+                    <title>Backend Intern - Example Systems - Remote - Indeed.com</title>
+                    <script type="application/ld+json">
+                      {
+                        "@type": "JobPosting",
+                        "title": "Backend Intern",
+                        "hiringOrganization": {"name": "Example Systems"},
+                        "jobLocationType": "TELECOMMUTE"
+                      }
+                    </script>
+                  </head>
+                  <body>Backend internship with Java and PostgreSQL.</body>
+                </html>
+                """);
+
+        var result = jobImportService.preview(new JobImportPreviewRequest(sourceUrl, null));
+
+        assertThat(result.extracted().title()).isEqualTo("Backend Intern");
+        assertThat(result.extracted().company()).isEqualTo("Example Systems");
+        assertThat(result.extracted().location()).isEqualTo("Remote");
+        assertThat(result.needsReview()).isFalse();
+    }
+
+    @Test
     void previewRequiresUrlOrPastedText() {
         // An import with no source gives the extractor nothing trustworthy to inspect.
         JobImportPreviewRequest request = new JobImportPreviewRequest(null, " ");
