@@ -75,6 +75,37 @@ class JobImportServiceTest {
     }
 
     @Test
+    void previewExtractsGreenhouseStyleTitleCompanyAndLocation() {
+        // Greenhouse job boards expose key fields through page metadata and layout classes,
+        // not always through simple "Company:" or "Location:" labels in the visible text.
+        String sourceUrl = "https://job-boards.greenhouse.io/example/jobs/123";
+        when(jobPageFetcher.fetch(sourceUrl)).thenReturn("""
+                <html>
+                  <head>
+                    <title>Job Application for Engineering Intern - Summer &#x27;26 at Example Security</title>
+                    <meta property="og:title" content="Engineering Intern - Summer &#x27;26"/>
+                    <meta property="og:description" content="Remote - US"/>
+                  </head>
+                  <body>
+                    <h1 class="section-header section-header--large font-primary">Engineering Intern - Summer &#x27;26</h1>
+                    <div class="job__location">Remote - US</div>
+                    <p>Work with backend services and production data.</p>
+                  </body>
+                </html>
+                """);
+
+        var result = jobImportService.preview(new JobImportPreviewRequest(sourceUrl, null));
+
+        assertThat(result.extracted().title()).isEqualTo("Engineering Intern - Summer '26");
+        assertThat(result.extracted().company()).isEqualTo("Example Security");
+        assertThat(result.extracted().location()).isEqualTo("Remote - US");
+        assertThat(result.confidence().title()).isEqualTo(ExtractionConfidence.HIGH);
+        assertThat(result.confidence().company()).isEqualTo(ExtractionConfidence.HIGH);
+        assertThat(result.confidence().location()).isEqualTo(ExtractionConfidence.HIGH);
+        assertThat(result.needsReview()).isFalse();
+    }
+
+    @Test
     void previewRequiresUrlOrPastedText() {
         // An import with no source gives the extractor nothing trustworthy to inspect.
         JobImportPreviewRequest request = new JobImportPreviewRequest(null, " ");
