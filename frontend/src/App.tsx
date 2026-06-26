@@ -392,7 +392,8 @@ export function App() {
         {view === 'context' && (
           <ContextView
             areas={areas}
-            selectedArea={selectedArea}
+            selectedAreaId={selectedAreaId}
+            setSelectedAreaId={setSelectedAreaId}
             projects={projects}
             projectName={projectName}
             setProjectName={setProjectName}
@@ -709,7 +710,8 @@ function JobsView({
 
 function ContextView({
   areas,
-  selectedArea,
+  selectedAreaId,
+  setSelectedAreaId,
   projects,
   projectName,
   setProjectName,
@@ -717,7 +719,8 @@ function ContextView({
   busy,
 }: {
   areas: Area[];
-  selectedArea: Area | undefined;
+  selectedAreaId: string;
+  setSelectedAreaId: (value: string) => void;
   projects: Project[];
   projectName: string;
   setProjectName: (value: string) => void;
@@ -728,7 +731,9 @@ function ContextView({
     <section className="two-column">
       <form className="panel form-panel" onSubmit={createProject}>
         <PanelTitle icon={<FolderKanban />} title="Projects" />
-        <label>Current area<input readOnly value={selectedArea?.name ?? ''} /></label>
+        <label>Current area<select value={selectedAreaId} onChange={(event) => setSelectedAreaId(event.target.value)}>
+          {areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}
+        </select></label>
         <label>New project<input required value={projectName} onChange={(event) => setProjectName(event.target.value)} /></label>
         <SubmitButton busy={busy} label="Create project" />
       </form>
