@@ -40,6 +40,12 @@ const task = {
   updatedAt: null,
 };
 
+const dashboardWithDueTask = {
+  ...emptyDashboard,
+  tasksDueToday: [task],
+  counts: { ...emptyDashboard.counts, dueToday: 1 },
+};
+
 describe('App', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -49,7 +55,7 @@ describe('App', () => {
       }
 
       if (url.startsWith('/api/dashboard/today')) {
-        return jsonResponse(emptyDashboard);
+        return jsonResponse(dashboardWithDueTask);
       }
 
       if (url === '/api/tasks/task-id/status' && init?.method === 'PATCH') {
@@ -101,6 +107,24 @@ describe('App', () => {
 
     const statusSelect = await screen.findByLabelText(/status for send application/i);
     fireEvent.change(statusSelect, { target: { value: 'COMPLETED' } });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/tasks/task-id/status',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'COMPLETED' }),
+        }),
+      );
+    });
+  });
+
+  it('completes a due task from the today dashboard', async () => {
+    const fetchMock = vi.mocked(fetch);
+    render(<App />);
+
+    const completeButton = await screen.findByRole('button', { name: /complete send application/i });
+    fireEvent.click(completeButton);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(

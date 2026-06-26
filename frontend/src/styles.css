@@ -372,6 +372,7 @@ textarea {
 
 .row-item,
 .job-item,
+.dashboard-task-row,
 .list-line {
   border: 1px solid rgba(28, 49, 75, 0.92);
   background: rgba(5, 11, 20, 0.58);
@@ -379,7 +380,8 @@ textarea {
 }
 
 .row-item,
-.job-item {
+.job-item,
+.dashboard-task-row {
   min-height: 70px;
   padding: 12px;
   display: flex;
@@ -389,9 +391,23 @@ textarea {
 }
 
 .row-item strong,
-.job-item strong {
+.job-item strong,
+.dashboard-task-row strong {
   display: block;
   margin-bottom: 4px;
+}
+
+.dashboard-task-row {
+  min-height: 62px;
+}
+
+.dashboard-task-row > div {
+  min-width: 0;
+}
+
+.dashboard-task-row span {
+  color: #8ea8bf;
+  font-size: 0.82rem;
 }
 
 .job-item {

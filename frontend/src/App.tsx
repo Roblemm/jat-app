@@ -402,6 +402,7 @@ export function App() {
             dashboardDate={dashboardDate}
             setDashboardAreaId={setDashboardAreaId}
             setDashboardDate={setDashboardDate}
+            updateTaskStatus={updateTaskStatus}
           />
         )}
 
@@ -493,6 +494,7 @@ function TodayView({
   dashboardDate,
   setDashboardAreaId,
   setDashboardDate,
+  updateTaskStatus,
 }: {
   areas: Area[];
   dashboard: TodayDashboard | null;
@@ -500,6 +502,7 @@ function TodayView({
   dashboardDate: string;
   setDashboardAreaId: (value: string) => void;
   setDashboardDate: (value: string) => void;
+  updateTaskStatus: (task: Task, status: TaskStatus) => void;
 }) {
   return (
     <section className="view-grid">
@@ -527,10 +530,27 @@ function TodayView({
       </div>
 
       <div className="split-grid">
-        <ListPanel icon={<CalendarDays />} title="Due today" items={dashboard?.tasksDueToday.map(taskSummary) ?? []} />
-        <ListPanel icon={<CheckCircle2 />} title="Scheduled" items={dashboard?.scheduledBlocks.map(scheduleSummary) ?? []} />
+        <TaskDashboardPanel
+          icon={<CalendarDays />}
+          title="Due today"
+          tasks={dashboard?.tasksDueToday ?? []}
+          updateTaskStatus={updateTaskStatus}
+        />
+        <TaskDashboardPanel
+          icon={<CheckCircle2 />}
+          title="Scheduled"
+          tasks={dashboard?.scheduledBlocks ?? []}
+          updateTaskStatus={updateTaskStatus}
+          summary={dashboardScheduleSummary}
+        />
         <ListPanel icon={<Target />} title="Active goals" items={dashboard?.activeGoals.map(goalSummary) ?? []} />
-        <ListPanel icon={<ListChecks />} title="Overdue" items={dashboard?.overdueTasks.map(taskSummary) ?? []} danger />
+        <TaskDashboardPanel
+          icon={<ListChecks />}
+          title="Overdue"
+          tasks={dashboard?.overdueTasks ?? []}
+          updateTaskStatus={updateTaskStatus}
+          danger
+        />
       </div>
     </section>
   );
@@ -931,6 +951,45 @@ function ListPanel({ icon, title, items, danger }: { icon: React.ReactNode; titl
   );
 }
 
+function TaskDashboardPanel({
+  icon,
+  title,
+  tasks,
+  updateTaskStatus,
+  summary = dashboardTaskSummary,
+  danger,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  tasks: Task[];
+  updateTaskStatus: (task: Task, status: TaskStatus) => void;
+  summary?: (task: Task) => string;
+  danger?: boolean;
+}) {
+  return (
+    <div className={danger ? 'panel list-panel danger-panel' : 'panel list-panel'}>
+      <PanelTitle icon={icon} title={title} />
+      <div className="stack-list compact">
+        {tasks.map((task) => (
+          <article className="dashboard-task-row" key={task.id}>
+            <div>
+              <strong>{task.title}</strong>
+              <span>{summary(task)}</span>
+            </div>
+            {/* Dashboard task actions stay narrow: finish visible work here, edit details from Tasks. */}
+            {task.status !== 'COMPLETED' && (
+              <button className="icon-only" type="button" onClick={() => updateTaskStatus(task, 'COMPLETED')} aria-label={`Complete ${task.title}`}>
+                <CheckCircle2 size={16} />
+              </button>
+            )}
+          </article>
+        ))}
+        {tasks.length === 0 && <EmptyState label="Nothing here." />}
+      </div>
+    </div>
+  );
+}
+
 function PanelTitle({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
     <div className="panel-heading">
@@ -965,6 +1024,16 @@ function titleForView(view: View) {
     jobs: 'Job Inbox',
     context: 'Context',
   }[view];
+}
+
+function dashboardTaskSummary(task: Task) {
+  const context = task.goalTitle ?? task.projectName ?? task.areaName;
+  return `${task.priority} - ${context}${task.dueAt ? ` - ${new Date(task.dueAt).toLocaleString()}` : ''}`;
+}
+
+function dashboardScheduleSummary(task: Task) {
+  const context = task.goalTitle ?? task.projectName ?? task.areaName;
+  return `${task.scheduledStart ? new Date(task.scheduledStart).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'No time'} - ${context}`;
 }
 
 function taskSummary(task: Task) {
