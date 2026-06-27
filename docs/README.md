@@ -44,6 +44,22 @@ Authentication is intentionally out of scope for V1 because the app is local-onl
 
 ## Local Development
 
+For normal use on Windows, run the launcher:
+
+```powershell
+.\launcher\start-jat.ps1
+```
+
+You can also double-click:
+
+```text
+launcher/Start Jat.cmd
+```
+
+The launcher checks Docker, starts the local services, waits for the backend and frontend to respond, then opens Jat in the browser.
+
+For manual development, run Docker Compose directly:
+
 ```powershell
 docker compose up --build
 ```
@@ -52,12 +68,16 @@ Frontend: http://localhost:5173
 Backend: http://localhost:8080
 Backend health: http://localhost:8080/actuator/health
 
-## One-Click Launcher
+## Launcher Options
 
-Run:
+Run without opening the browser:
 
 ```powershell
-.\launcher\start-jat.ps1
+.\launcher\start-jat.ps1 -NoBrowser
 ```
 
-The launcher starts Docker Compose, waits for the backend health endpoint, and opens the frontend in the browser.
+Use a longer startup timeout:
+
+```powershell
+.\launcher\start-jat.ps1 -TimeoutSeconds 300
+```
