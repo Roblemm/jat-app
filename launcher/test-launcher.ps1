@@ -48,6 +48,11 @@ $installerText = Get-Content -Raw $shortcutInstaller
 $installerCmdText = Get-Content -Raw $shortcutInstallerCmd
 
 Assert-Contains -Text $scriptText -Expected "function Test-CommandAvailable" -Message "Launcher should check whether Docker is available."
+Assert-Contains -Text $scriptText -Expected "function Start-DockerDesktop" -Message "Launcher should start Docker Desktop when the engine is stopped."
+Assert-Contains -Text $scriptText -Expected "function Wait-DockerEngine" -Message "Launcher should wait for the Docker engine before running Compose."
+Assert-Contains -Text $scriptText -Expected "Docker Desktop.exe" -Message "Launcher should know the Docker Desktop executable name."
+Assert-Contains -Text $scriptText -Expected "DockerTimeoutSeconds" -Message "Launcher should expose a Docker startup timeout."
+Assert-Contains -Text $scriptText -Expected 'return $false' -Message "Docker engine probe should return false instead of crashing when Docker is stopped."
 Assert-Contains -Text $scriptText -Expected "function Wait-HttpEndpoint" -Message "Launcher should wait for HTTP readiness instead of sleeping blindly."
 Assert-Contains -Text $scriptText -Expected '@("up", "-d", "--build")' -Message "Launcher should start Docker Compose with rebuild support."
 Assert-Contains -Text $scriptText -Expected "http://localhost:8080/actuator/health" -Message "Launcher should wait for backend health."
