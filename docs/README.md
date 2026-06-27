@@ -70,6 +70,20 @@ Backend health: http://localhost:8080/actuator/health
 
 ## Launcher Options
 
+Create or refresh a Desktop shortcut:
+
+```powershell
+.\launcher\install-desktop-shortcut.ps1
+```
+
+You can also double-click:
+
+```text
+launcher/Install Desktop Shortcut.cmd
+```
+
+This creates `Jat.lnk` on the Windows Desktop and stores the shortcut icon at `%LOCALAPPDATA%\Jat\jat.ico`.
+
 Run without opening the browser:
 
 ```powershell
