@@ -40,6 +40,24 @@ const task = {
   updatedAt: null,
 };
 
+const goal = {
+  id: 'goal-id',
+  areaId: 'personal-id',
+  areaName: 'Personal',
+  projectId: null,
+  projectName: null,
+  title: 'Build health routine',
+  description: null,
+  goalType: 'TARGET',
+  status: 'ACTIVE',
+  recurrence: 'WEEKLY',
+  targetValue: null,
+  unit: null,
+  targetDate: null,
+  createdAt: null,
+  updatedAt: null,
+};
+
 const dashboardWithDueTask = {
   ...emptyDashboard,
   tasksDueToday: [task],
@@ -60,6 +78,10 @@ describe('App', () => {
 
       if (url === '/api/tasks/task-id/status' && init?.method === 'PATCH') {
         return jsonResponse({ ...task, status: 'COMPLETED', completedAt: '2026-06-26T12:00:00Z' });
+      }
+
+      if (url === '/api/goals' && init?.method === 'POST') {
+        return jsonResponse(goal);
       }
 
       if (url.startsWith('/api/tasks')) {
@@ -132,6 +154,39 @@ describe('App', () => {
         expect.objectContaining({
           method: 'PATCH',
           body: JSON.stringify({ status: 'COMPLETED' }),
+        }),
+      );
+    });
+  });
+
+  it('creates a goal without a project while still assigning an area', async () => {
+    const fetchMock = vi.mocked(fetch);
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: /goals/i }));
+
+    const areaSelect = await screen.findByLabelText(/goal area/i);
+    fireEvent.change(areaSelect, { target: { value: 'personal-id' } });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /save goal/i })).toBeEnabled();
+    });
+
+    fireEvent.change(screen.getByLabelText(/^title$/i), { target: { value: 'Build health routine' } });
+    fireEvent.click(screen.getByRole('button', { name: /save goal/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/goals',
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('"areaId":"personal-id"'),
+        }),
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/goals',
+        expect.objectContaining({
+          body: expect.stringContaining('"projectId":null'),
         }),
       );
     });

@@ -408,8 +408,11 @@ export function App() {
 
         {view === 'goals' && (
           <GoalsView
+            areas={areas}
             projects={projects}
             goals={visibleGoals}
+            selectedAreaId={selectedAreaId}
+            setSelectedAreaId={setSelectedAreaId}
             goalStatusFilter={goalStatusFilter}
             setGoalStatusFilter={setGoalStatusFilter}
             goalForm={goalForm}
@@ -557,8 +560,11 @@ function TodayView({
 }
 
 function GoalsView({
+  areas,
   projects,
   goals,
+  selectedAreaId,
+  setSelectedAreaId,
   goalStatusFilter,
   setGoalStatusFilter,
   goalForm,
@@ -568,8 +574,11 @@ function GoalsView({
   deleteGoal,
   busy,
 }: {
+  areas: Area[];
   projects: Project[];
   goals: Goal[];
+  selectedAreaId: string;
+  setSelectedAreaId: (value: string) => void;
   goalStatusFilter: GoalStatus | 'ALL';
   setGoalStatusFilter: (value: GoalStatus | 'ALL') => void;
   goalForm: {
@@ -593,10 +602,18 @@ function GoalsView({
       <form className="panel form-panel" onSubmit={createGoal}>
         <PanelTitle icon={<Plus />} title="Create goal" />
         <label>Title<input required value={goalForm.title} onChange={(event) => setGoalForm((form) => ({ ...form, title: event.target.value }))} /></label>
-        <label>Project<select value={goalForm.projectId} onChange={(event) => setGoalForm((form) => ({ ...form, projectId: event.target.value }))}>
-          <option value="">No project</option>
-          {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
-        </select></label>
+        <div className="form-row">
+          <label>Goal area<select value={selectedAreaId} onChange={(event) => {
+            setSelectedAreaId(event.target.value);
+            setGoalForm((form) => ({ ...form, projectId: '' }));
+          }}>
+            {areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}
+          </select></label>
+          <label>Project<select value={goalForm.projectId} onChange={(event) => setGoalForm((form) => ({ ...form, projectId: event.target.value }))}>
+            <option value="">No project</option>
+            {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
+          </select></label>
+        </div>
         <div className="form-row">
           <label>Type<select value={goalForm.goalType} onChange={(event) => setGoalForm((form) => ({ ...form, goalType: event.target.value as GoalType }))}>
             {goalTypes.map((type) => <option key={type}>{type}</option>)}
